@@ -35,16 +35,13 @@ int main(int argc, char * argv[]){
   struct sockaddr_in sin;
   char *host;
   char buf[MAX_LINE], *fileName, c;
-  int s, SERVER_PORT = 5432, flag = 0;
+  int s, SERVER_PORT = 5432, flag = 1;
   int len;
   if (argc == 3) {
     host = argv[1];
     SERVER_PORT = atoi(argv[2]);
-  }
-  else if(argc == 4){
+  }else if(argc == 2){
     host = argv[1];
-    SERVER_PORT = atoi(argv[2]);
-    fileName = argv[3];
     flag = 1;
   }
   else {
@@ -90,11 +87,5 @@ int main(int argc, char * argv[]){
     createFile(s, buf);
     printf("%s\n", buf);
     close(s);
-  }else{  // take input from user and send to server
-    while (fgets(buf, sizeof(buf), stdin)) {
-      buf[MAX_LINE-1] = '\0';
-      len = strlen(buf) + 1;
-      send(s, buf, len, 0);
-    }
   }
 }

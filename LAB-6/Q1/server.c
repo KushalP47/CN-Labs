@@ -77,20 +77,10 @@ int main(){
         close(new_s);
         break;
       }else{
-        while (len = recv(new_s, buf, sizeof(buf), 0))
-          fputs(buf, stdout);
+        printf("Server received incorrect request: %s\n", buf);
         close(new_s);
+        break;
       }
     }
   }
-  // while(1) {
-  //   if ((new_s = accept(s, (struct sockaddr *)&sin, &len)) < 0) {
-  //     perror("simplex-talk: accept");
-  //     exit(1);
-  //   }
-  //   printf("Server Listening.\n");
-  //   while (len = recv(new_s, buf, sizeof(buf), 0))
-  //     fputs(buf, stdout);
-  //   close(new_s);
-  // }
 }
