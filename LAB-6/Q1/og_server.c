@@ -17,9 +17,10 @@ void sendFile(int s, char *fileName){
   FILE *fp;
   char buf[MAX_LINE];
   int len;
+  printf("Server sending file: %s\n", fileName);
   fp = fopen(fileName, "r");
   if (fp == NULL) {
-    perror("simplex-talk: file open");
+    perror("File does not exists.");
     exit(1);
   }
   while (fgets(buf, sizeof(buf), fp)) {
@@ -68,25 +69,28 @@ int main(){
       exit(1);
     }
     printf("Server Listening.\n");
-
     while(len = recv(new_s, buf, sizeof(buf), 0)){
+      if(strcmp(buf, "GET") == 0){
         printf("Server received: %s file request \n", buf);
-        // buf = "sample.txt";
         char buff[] = "sample.txt";
         sendFile(new_s, buff);
         close(new_s);
         break;
+      }else{
+        while (len = recv(new_s, buf, sizeof(buf), 0))
+          fputs(buf, stdout);
+        close(new_s);
+      }
     }
   }
-  /* wait for connection, then receive and print text */
-//   while(1) {
-//     if ((new_s = accept(s, (struct sockaddr *)&sin, &len)) < 0) {
-//       perror("simplex-talk: accept");
-//       exit(1);
-//     }
-//     printf("Server Listening.\n");
-//     while (len = recv(new_s, buf, sizeof(buf), 0))
-//       fputs(buf, stdout);
-//     close(new_s);
-//   }
+  // while(1) {
+  //   if ((new_s = accept(s, (struct sockaddr *)&sin, &len)) < 0) {
+  //     perror("simplex-talk: accept");
+  //     exit(1);
+  //   }
+  //   printf("Server Listening.\n");
+  //   while (len = recv(new_s, buf, sizeof(buf), 0))
+  //     fputs(buf, stdout);
+  //   close(new_s);
+  // }
 }

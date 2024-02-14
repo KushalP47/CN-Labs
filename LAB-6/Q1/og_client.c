@@ -8,8 +8,25 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+void createFile(int s, char buf[]){
+  FILE *fp;
+  // char buf[256];
+  int len;
+  fp = fopen("client_sample.txt", "w");
+  if (fp == NULL) {
+    perror("File does not exists.");
+    exit(1);
+  }
+  // if(recv(s, buf, sizeof(buf), 0) != 0){
+    printf("Server sent: %s\n", buf);
+    fputs(buf, fp);
+  // }
+  fclose(fp);
+  printf("File received.\n");
+  return;
+}
 
-#define SERVER_PORT 5432
+// #define SERVER_PORT 5432
 #define MAX_LINE 256
 
 int main(int argc, char * argv[]){
@@ -17,11 +34,18 @@ int main(int argc, char * argv[]){
   struct hostent *hp;
   struct sockaddr_in sin;
   char *host;
-  char buf[MAX_LINE], fileName[] = "sample.txt", c;
-  int s;
+  char buf[MAX_LINE], *fileName, c;
+  int s, SERVER_PORT = 5432, flag = 0;
   int len;
-  if (argc > 1) {
+  if (argc == 3) {
     host = argv[1];
+    SERVER_PORT = atoi(argv[2]);
+  }
+  else if(argc == 4){
+    host = argv[1];
+    SERVER_PORT = atoi(argv[2]);
+    fileName = argv[3];
+    flag = 1;
   }
   else {
     fprintf(stderr, "usage: %s host\n", argv[0]);
@@ -59,15 +83,18 @@ int main(int argc, char * argv[]){
   else
     printf("Client connected.\n");
   
-  send(s, "GET", 3, 0);
-  printf("Client sent: GET file request\n");
-  recv(s, buf, sizeof(buf), 0);
-  printf("%s\n", buf);
+  if(flag == 1){  // send file request to server
+    send(s, "GET", 3, 0);
+    printf("Client sent: GET file request\n");
+    recv(s, buf, sizeof(buf), 0);
+    createFile(s, buf);
+    printf("%s\n", buf);
     close(s);
-  /* main loop: get and send lines of text */
-//   while (fgets(buf, sizeof(buf), stdin)) {
-//     buf[MAX_LINE-1] = '\0';
-//     len = strlen(buf) + 1;
-//     send(s, buf, len, 0);
-//   }
+  }else{  // take input from user and send to server
+    while (fgets(buf, sizeof(buf), stdin)) {
+      buf[MAX_LINE-1] = '\0';
+      len = strlen(buf) + 1;
+      send(s, buf, len, 0);
+    }
+  }
 }
