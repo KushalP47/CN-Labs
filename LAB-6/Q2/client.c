@@ -12,6 +12,24 @@
 #define SERVER_PORT 5432
 #define MAX_LINE 256
 
+void recieveFile(int s, FILE* fptr, int fileSize){
+    long int packetSize = 256, totalPackets = (fileSize/256);
+    if(fileSize%256 != 0)
+      totalPackets += 1;
+    
+    int currentPacket = 0;
+    char buf[256];
+    printf("Packets Received: %d   Packets Remaining: %d \n", currentPacket, totalPackets);
+    while(totalPackets >= currentPacket){
+      printf("Packets Received: %d   Packets Remaining: %d \r", currentPacket, totalPackets);
+      int l = recv(s, buf, sizeof(buf), 0);
+      fwrite(buf, 1, l, fptr);
+      currentPacket ++;
+    }
+    fclose(fptr);
+    return;
+}
+
 int main(int argc, char * argv[]){
   FILE *fp;
   struct hostent *hp;
@@ -23,7 +41,7 @@ int main(int argc, char * argv[]){
   if (argc > 1) {
     // host = argv[1];
     // fileName = argv[3];
-    while((c = getopt(argc, argv, "h:f:c:")) != -1){
+    while((c = getopt(argc, argv, "h:f:")) != -1){
         switch(c){
         case 'f':
             fileName = optarg;
@@ -33,11 +51,6 @@ int main(int argc, char * argv[]){
             host = optarg;
             printf("Client connected to server: %s\n", host);
             break;
-        case 'c':
-            if(strcmp(optarg, "GET") != 0){
-                fprintf(stderr, "no %s such command exists", optarg);
-                exit(1);
-            }
         case '?':
             fprintf(stderr, "usage: %s -p port host\n", argv[0]);
             exit(1);
@@ -82,15 +95,25 @@ int main(int argc, char * argv[]){
   else
     printf("Client connected.\n");
   
-  send(s, fileName, sizeof(fileName), 0);
+  send(s, fileName, 256, 0);
   printf("Client sent: %s file request\n", fileName);
   recv(s, buf, sizeof(buf), 0);
-  printf("%s\n", buf);
+  printf("file size %s", buf);
+  int fileSize = atoi(buf);
+  printf("File size to recieve: %d \n", fileSize);
+  if(fileSize == -1){
+    printf("File doesn't exists\n");
+    close(s);
+    return 0;
+  }
+
+  char path[MAX_LINE] = "./responses/";
+  strcat(path, fileName);
+  printf("%s", path);
+  FILE* fptr = fopen(path, "wb");
+  printf("File size to recieve: %d \n", fileSize);
+  recieveFile(s, fptr, fileSize);
+  printf("File Received\n");
   close(s);
-  /* main loop: get and send lines of text */
-//   while (fgets(buf, sizeof(buf), stdin)) {
-//     buf[MAX_LINE-1] = '\0';
-//     len = strlen(buf) + 1;
-//     send(s, buf, len, 0);
-//   }
+
 }

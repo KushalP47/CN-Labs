@@ -13,27 +13,55 @@
 #define MAX_PENDING 5
 #define MAX_LINE 256
 
-void sendFile(int s, char *fileName){
-  FILE *fp;
-  char buf[MAX_LINE];
-  int len;
-  fp = fopen(fileName, "r");
-  if (fp == NULL) {
-    perror("simplex-talk: file open");
-    exit(1);
-  }
-  while (fgets(buf, sizeof(buf), fp)) {
-    buf[MAX_LINE-1] = '\0';
-    len = strlen(buf) + 1;
-    send(s, buf, len, 0);
-  }
-  fclose(fp);
+int findSize(char *file_name) 
+{ 
+    printf("Server got %s file request", file_name);
+    // opening the file in read mode 
+    FILE* fp = fopen(file_name, "r"); 
+  
+    // checking if the file exist or not 
+    if (fp == NULL) { 
+        // printf("File Not Found!\n"); 
+        return -1; 
+    } 
+  
+    fseek(fp, 0L, SEEK_END); 
+  
+    // calculating the size of the file 
+    long int res = ftell(fp); 
+  
+    // closing the file 
+    fclose(fp); 
+  
+    return res; 
+} 
+
+void sendFile(int s, char *fileName, long int fileSize){
+	int packetSize = 256, totalPackets = (fileSize/256);
+	if(fileSize%256 != 0)
+		totalPackets++;
+	
+	int currentPacket = 0;
+	char buf[256];
+	FILE* fptr = fopen(fileName, "rb");
+	printf("%d %d\n", currentPacket, totalPackets);
+	while(totalPackets >= currentPacket){
+		printf("Packets Send: %d Packets Remaining: %ld \r", currentPacket, totalPackets);
+		fflush(stdout);
+		int re = fread(buf, 1, sizeof(buf), fptr);
+		send(s, buf, re, 0);
+		sleep(0.1);
+		currentPacket++;
+	}
+	printf("\nFile Sent\n");
+	fclose(fptr);
+	return;
 }
 
 int main(){
 
   struct sockaddr_in sin;
-  char buf[256];
+  char buf[256], *fileName;
   socklen_t len;
   int s, new_s;
   char str[INET_ADDRSTRLEN];
@@ -70,21 +98,21 @@ int main(){
     printf("Server Listening.\n");
 
     while(len = recv(new_s, buf, 256, 0)){
+      fileName = buf;
         printf("Server received: %s file request \n", buf);
-        sendFile(new_s, buf);
+        int fileSize = findSize(fileName);
+				char str[3];
+				sprintf(str, "%d", fileSize);
+			  printf("%d %s\n", fileSize, str);
+				send(new_s, str, strlen(str), 0);
+        if(fileSize == -1){
+						close(new_s);
+						break;
+				}
+        sendFile(new_s, fileName, fileSize);
         close(new_s);
         break;
     }
   }
-  /* wait for connection, then receive and print text */
-//   while(1) {
-//     if ((new_s = accept(s, (struct sockaddr *)&sin, &len)) < 0) {
-//       perror("simplex-talk: accept");
-//       exit(1);
-//     }
-//     printf("Server Listening.\n");
-//     while (len = recv(new_s, buf, sizeof(buf), 0))
-//       fputs(buf, stdout);
-//     close(new_s);
-//   }
+  
 }
